@@ -1,25 +1,26 @@
 #include <array>
 #include <algorithm>
 #include <string>
+#include <cstdint>
+#include <vector>
+#include <iterator>
 
 #include <ida.hpp>
 #include <idp.hpp>
 #include <loader.hpp>
 
-#include "Plugin.hpp"
+struct plugin_ctx_t : public plugmod_t
+{
+  virtual bool idaapi run(size_t arg) override;
+};
 
-using namespace std;
-
-Plugin g_plugin{};
-
-Plugin::Plugin() {
+static plugmod_t *idaapi init()
+{
+  return new plugin_ctx_t;
 }
 
-int Plugin::initialize() {
-    return PLUGIN_OK;
-}
-
-bool Plugin::run(size_t arg) {
+bool idaapi plugin_ctx_t::run(size_t arg)
+{
     msg("Pattern Maker running...\n");
 
     // If -1 is passed as the arg then lets unload.
@@ -40,8 +41,8 @@ bool Plugin::run(size_t arg) {
 
     msg("Creating pattern for address: %p...\n", address);
 
-    vector<uint8_t> bytes{};
-    vector<uint8_t> mask{};
+    std::vector<uint8_t> bytes{};
+    std::vector<uint8_t> mask{};
     int offset{ 0 };
 
     // 100 instructions max.
@@ -60,7 +61,7 @@ bool Plugin::run(size_t arg) {
         }
 
         // By default the instruction mask is all 1's
-        vector<uint8_t> instructionMask(instruction.size, 1);
+        std::vector<uint8_t> instructionMask(instruction.size, 1);
 
         for (const auto& op : instruction.ops) {
             if (op.type == o_void) {
@@ -75,8 +76,8 @@ bool Plugin::run(size_t arg) {
             }
         }
 
-        // Copy this isntructions mask to our pattern's mask.
-        copy(instructionMask.begin(), instructionMask.end(), back_inserter(mask));
+        // Copy this instructions mask to our pattern's mask.
+        copy(instructionMask.begin(), instructionMask.end(), std::back_inserter(mask));
 
         // Search from the min-most address to the address we're making the pattern 
         // for.
@@ -94,11 +95,11 @@ bool Plugin::run(size_t arg) {
     }
 
     // Create a pattern from the bytes and mask.
-    string pattern{};
+    std::string pattern{};
 
     for (int i = 0; i < bytes.size(); ++i) {
         if (mask[i] == 1) {
-            array<char, 3> byte{};
+            std::array<char, 3> byte{};
 
             sprintf_s(byte.data(), byte.size(), "%02X", bytes[i]);
 
@@ -123,5 +124,15 @@ bool Plugin::run(size_t arg) {
     return true;
 }
 
-void Plugin::terminate() {
-}
+// Plugin interface to IDA.
+plugin_t PLUGIN {
+    IDP_INTERFACE_VERSION,
+    PLUGIN_MULTI,
+    init,
+    nullptr,
+    nullptr,
+    "Creates a (hopefully unique) pattern from the currently selected address. By cursey.",
+    "Set the cursor on an instruction you want to create a pattern for and run the plugin or press the hotkey.",
+    "Pattern Maker",
+    "Ctrl+Alt+S"
+};

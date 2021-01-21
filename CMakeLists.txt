@@ -1,11 +1,9 @@
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.2 FATAL_ERROR)
 
-project(IDA-PatternMaker)
+project(ida-pattern-maker)
 
-# Set the output directories we want so that they located in the top-level binary
-# directory.
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-
-add_subdirectory(src)
+# Plugin 1
+set(PLUGIN_NAME              ida-pattern-maker)
+set(PLUGIN_SOURCES           Main.cpp)
+set(PLUGIN_RUN_ARGS          "-t -z10000") # Debug messages for the debugger
+include(${CMAKE_CURRENT_LIST_DIR}/plugins.cmake)
